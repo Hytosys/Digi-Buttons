@@ -1,12 +1,10 @@
 package com.skytroniks.digibuttons;
 
-import java.awt.image.BufferedImage;
-
 public class NamedImage {
   private String name;
-  private BufferedImage image;
+  private CroppedImage image;
 
-  public NamedImage(String _name, BufferedImage _image) {
+  public NamedImage(String _name, CroppedImage _image) {
     name = _name;
     image = _image;
   }
@@ -15,7 +13,7 @@ public class NamedImage {
     return name;
   }
 
-  public BufferedImage getImage() {
+  public CroppedImage getImage() {
     return image;
   }
 }

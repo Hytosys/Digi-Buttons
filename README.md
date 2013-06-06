@@ -8,4 +8,4 @@ low-level keyboard hook implementation specifically for Windows using the Java
 Native Access library. Allows for interface customization through property
 files and flat image files in an external resources folder.
 
-[Download executable Java archive (1.5MB)](http://hostr.co/wj4r7jlYVgCm)
+[Download executable Java archive (1.5MB)](http://hostr.co/p575ySifITT6)

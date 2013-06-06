@@ -2,6 +2,11 @@ package com.skytroniks.digibuttons;
 
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.Point;
+import java.awt.Transparency;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -20,25 +25,31 @@ public class MainPanel extends JPanel {
       "up", "down", "light-punch", "medium-punch", "heavy-punch", "light-kick",
       "medium-kick", "heavy-kick", "l-1", "l-2" };
 
-  private BufferedImage layoutUnpressed;
+  private CroppedImage layoutUnpressed;
   private ArrayList<NamedImage> overlays;
   private ArrayList<NamedImage> backgrounds;
   private Settings settings;
-  private BufferedImage[] pressed;
+  private CroppedImage[] pressed;
   private boolean[] isPressed;
   private int overlayIndex;
   private int backgroundIndex;
+  private BufferedImage backgroundCache;
+  private BufferedImage overlayCache;
+  private Dimension previousPanelSize;
 
   public MainPanel() {
     Dimension windowSize = new Dimension(629, 365);
     this.setPreferredSize(windowSize);
 
-    layoutUnpressed = ResourceLoader.loadImage("layout_unpressed");
+    layoutUnpressed = ResourceLoader.loadImage("layout_unpressed", false);
     settings = ResourceLoader.loadSettings();
     overlays = ResourceLoader.loadOverlays();
     backgrounds = ResourceLoader.loadBackgrounds();
     overlayIndex = -1;
     backgroundIndex = -1;
+    backgroundCache = null;
+    overlayCache = null;
+    previousPanelSize = new Dimension(0, 0);
 
     if (settings.defaultOverlay != null) {
       for (int index = 0; index < overlays.size(); index++) {
@@ -60,12 +71,12 @@ public class MainPanel extends JPanel {
       }
     }
 
-    pressed = new BufferedImage[pressedNames.length];
+    pressed = new CroppedImage[pressedNames.length];
     isPressed = new boolean[pressedNames.length];
 
     for (int index = 0; index < pressed.length; index++) {
       isPressed[index] = false;
-      pressed[index] = ResourceLoader.loadImage(pressedNames[index]);
+      pressed[index] = ResourceLoader.loadImage(pressedNames[index], true);
     }
   }
 
@@ -121,8 +132,10 @@ public class MainPanel extends JPanel {
       public void actionPerformed(ActionEvent event) {
         if (type.compareTo("overlay") == 0) {
           overlayIndex = -1;
+          parent.cacheOverlay();
         } else if (type.compareTo("background") == 0) {
           backgroundIndex = -1;
+          parent.cacheBackground();
         }
         parent.repaint();
       }
@@ -141,8 +154,10 @@ public class MainPanel extends JPanel {
         public void actionPerformed(ActionEvent event) {
           if (type.compareTo("overlay") == 0) {
             overlayIndex = finalIndex;
+            parent.cacheOverlay();
           } else if (type.compareTo("background") == 0) {
             backgroundIndex = finalIndex;
+            parent.cacheBackground();
           }
           parent.repaint();
         }
@@ -169,33 +184,97 @@ public class MainPanel extends JPanel {
   @Override
   protected void paintComponent(Graphics g) {
     super.paintComponent(g);
+    final Dimension size = g.getClipBounds().getSize();
 
-    if (backgroundIndex > -1 && backgroundIndex < backgrounds.size()) {
-      final BufferedImage image = backgrounds.get(backgroundIndex).getImage();
-      drawScaledImage(g, image);
+    if (previousPanelSize.width != size.width
+        || previousPanelSize.height != size.height) {
+      cacheBackground();
+      cacheOverlay();
+      
+      for (int index = 0; index < pressed.length; index++) {
+        pressed[index].cache(size);
+      }
     }
 
-    drawScaledImage(g, layoutUnpressed);
+    if (backgroundCache != null) {
+      g.drawImage(backgroundCache, 0, 0, null);
+    }
 
     for (int index = 0; index < pressed.length; index++) {
       if (!isPressed[index]) {
         continue;
       }
 
-      drawScaledImage(g, pressed[index]);
+      BufferedImage cache = pressed[index].getCache();
+      Point location = pressed[index].getCacheRect().getLocation();
+      g.drawImage(cache, location.x, location.y, null);
     }
 
-    if (overlayIndex > -1 && overlayIndex < overlays.size()) {
-      final BufferedImage image = overlays.get(overlayIndex).getImage();
-      drawScaledImage(g, image);
+    if (overlayCache != null) {
+      g.drawImage(overlayCache, 0, 0, null);
     }
   }
 
-  private static double getScaleFactor(int masterSize, int targetSize) {
+  private void cacheBackground() {
+    final Dimension size = this.getSize();
+
+    if (size.width == 0 || size.height == 0) {
+      backgroundCache = null;
+      return;
+    }
+
+    GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+    GraphicsDevice gd = ge.getDefaultScreenDevice();
+    GraphicsConfiguration gc = gd.getDefaultConfiguration();
+
+    BufferedImage finalImage = gc.createCompatibleImage(size.width,
+        size.height, Transparency.TRANSLUCENT);
+    
+    Graphics g = finalImage.getGraphics();
+
+    if (backgroundIndex > -1 && backgroundIndex < backgrounds.size()) {
+      final CroppedImage croppedImage = backgrounds.get(backgroundIndex)
+          .getImage();
+      final BufferedImage image = croppedImage.getImage();
+      drawScaledImage(size, g, image);
+    }
+
+    drawScaledImage(size, g, layoutUnpressed.getImage());
+
+    backgroundCache = finalImage;
+  }
+
+  private void cacheOverlay() {
+    final Dimension size = this.getSize();
+
+    if (size.width == 0 || size.height == 0) {
+      overlayCache = null;
+      return;
+    }
+
+    GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+    GraphicsDevice gd = ge.getDefaultScreenDevice();
+    GraphicsConfiguration gc = gd.getDefaultConfiguration();
+
+    BufferedImage finalImage = gc.createCompatibleImage(size.width,
+        size.height, Transparency.TRANSLUCENT);
+    Graphics g = finalImage.getGraphics();
+
+    if (overlayIndex > -1 && overlayIndex < overlays.size()) {
+      final CroppedImage croppedImage = overlays.get(overlayIndex).getImage();
+      final BufferedImage image = croppedImage.getImage();
+      drawScaledImage(size, g, image);
+      overlayCache = finalImage;
+    } else {
+      overlayCache = null;
+    }
+  }
+
+  public static double getScaleFactor(int masterSize, int targetSize) {
     return (double) targetSize / (double) masterSize;
   }
 
-  private static double getScaleFactorToFit(Dimension masterSize,
+  public static double getScaleFactorToFit(Dimension masterSize,
       Dimension targetSize) {
     double scaleWidth = getScaleFactor(masterSize.width, targetSize.width);
     double scaleHeight = getScaleFactor(masterSize.height, targetSize.height);
@@ -203,17 +282,19 @@ public class MainPanel extends JPanel {
     return Math.min(scaleHeight, scaleWidth);
   }
 
-  private static void drawScaledImage(Graphics g, BufferedImage image) {
-    Dimension panelSize = g.getClipBounds().getSize();
-    Dimension imageSize = new Dimension(image.getWidth(), image.getHeight());
+  public static void drawScaledImage(Dimension size, Graphics g,
+      BufferedImage image) {
+    final Dimension originalSize = new Dimension(image.getWidth(),
+        image.getHeight());
+    final double scaleFactor = getScaleFactorToFit(originalSize, size);
 
-    final double scaleFactor = getScaleFactorToFit(imageSize, panelSize);
-    final int scaledWidth = (int) Math.round(image.getWidth() * scaleFactor);
-    final int scaledHeight = (int) Math.round(image.getHeight() * scaleFactor);
-    final int width = panelSize.width - 1 - scaledWidth;
-    final int height = panelSize.height - 1 - scaledHeight;
-    final int x = width / 2;
-    final int y = height / 2;
+    final int scaledWidth = (int) Math.round(originalSize.width * scaleFactor);
+    final int scaledHeight = (int) Math
+        .round(originalSize.height * scaleFactor);
+    final int midWidth = size.width - 1 - scaledWidth;
+    final int midHeight = size.height - 1 - scaledHeight;
+    final int x = midWidth / 2;
+    final int y = midHeight / 2;
 
     g.drawImage(image, x, y, scaledWidth, scaledHeight, null);
   }

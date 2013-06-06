@@ -142,7 +142,7 @@ public class MainWindow extends JFrame {
     while (!quit) {
       User32.INSTANCE.PeekMessage(msg, null, 0, 0, 0);
       try {
-        Thread.sleep(10);
+        Thread.sleep(1);
       } catch (InterruptedException e) {
         // fine, don't sleep then
       }

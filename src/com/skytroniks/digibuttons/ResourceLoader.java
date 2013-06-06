@@ -17,7 +17,7 @@ public class ResourceLoader {
       "up", "down", "light_punch", "medium_punch", "heavy_punch", "light_kick",
       "medium_kick", "heavy_kick", "l_1", "l_2" };
 
-  public static BufferedImage loadImage(String name) {
+  public static CroppedImage loadImage(String name, boolean crop) {
     BufferedImage image = null;
 
     InputStream stream;
@@ -45,8 +45,11 @@ public class ResourceLoader {
     } catch (IOException exception) {
       // ignore, might just be a package resource
     }
+    
+    CroppedImage croppedImage = new CroppedImage();
+    croppedImage.initialize(image, crop);
 
-    return image;
+    return croppedImage;
   }
 
   public static Settings loadSettings() {
@@ -130,7 +133,10 @@ public class ResourceLoader {
       }
 
       if (image != null) {
-        images.add(new NamedImage(filename, image));
+        CroppedImage croppedImage = new CroppedImage();
+        croppedImage.initialize(image, false);
+        
+        images.add(new NamedImage(filename, croppedImage));
       }
     }
 
