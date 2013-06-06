@@ -30,14 +30,14 @@ public class MainWindow extends JFrame {
   public MainWindow() {
     super("Digi-Buttons");
 
-    this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    this.setResizable(false);
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    setResizable(true);
 
     final MainPanel mainPanel = new MainPanel();
-    this.setContentPane(mainPanel);
+    setContentPane(mainPanel);
     initializeMenuBar(mainPanel);
-    this.pack();
-    this.setLocationRelativeTo(null);
+    pack();
+    setLocationRelativeTo(null);
 
     modShift = 0;
     modControl = 0;
@@ -173,9 +173,12 @@ public class MainWindow extends JFrame {
 
           final int hotKeyModifiers = hotKey.getModifiers();
           final int eventModifiers = event.getModifiers();
-          final boolean control = (eventModifiers & KeyEvent.CTRL_DOWN_MASK | eventModifiers & KeyEvent.CTRL_MASK) > 0;
-          final boolean shift = (eventModifiers & KeyEvent.SHIFT_DOWN_MASK | eventModifiers & KeyEvent.SHIFT_MASK) > 0;
-          final boolean alt = (eventModifiers & KeyEvent.ALT_DOWN_MASK | eventModifiers & KeyEvent.ALT_MASK) > 0;
+          final boolean control = (eventModifiers & KeyEvent.CTRL_DOWN_MASK | eventModifiers
+              & KeyEvent.CTRL_MASK) > 0;
+          final boolean shift = (eventModifiers & KeyEvent.SHIFT_DOWN_MASK | eventModifiers
+              & KeyEvent.SHIFT_MASK) > 0;
+          final boolean alt = (eventModifiers & KeyEvent.ALT_DOWN_MASK | eventModifiers
+              & KeyEvent.ALT_MASK) > 0;
 
           final boolean ignoreModifiers = !keyDown || hotKeyModifiers == 0;
           final boolean modifiersMatch = WindowsKeyMap.modifiersSatisfactory(
@@ -194,8 +197,11 @@ public class MainWindow extends JFrame {
 
     JMenu overlayMenu = new JMenu("Overlay");
     menuBar.add(overlayMenu);
-
     mainPanel.addOverlaysToMenu(overlayMenu);
+
+    JMenu backgroundMenu = new JMenu("Background");
+    menuBar.add(backgroundMenu);
+    mainPanel.addBackgroundsToMenu(backgroundMenu);
 
     setJMenuBar(menuBar);
   }

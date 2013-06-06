@@ -43,7 +43,7 @@ public class WindowsKeyMap {
           return false;
         }
       }
-      
+
       if ((keyCode.getModifiers() & InputEvent.CTRL_DOWN_MASK) != 0) {
         if (!modControl) {
           return false;

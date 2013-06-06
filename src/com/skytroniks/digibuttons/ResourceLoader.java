@@ -78,22 +78,35 @@ public class ResourceLoader {
 
       settings.hotKey[index] = keyStroke;
     }
-    
+
     String defaultOverlay = properties.getProperty("default_overlay");
     if (defaultOverlay != null) {
       settings.defaultOverlay = defaultOverlay;
     }
 
+    String defaultBackground = properties.getProperty("default_background");
+    if (defaultBackground != null) {
+      settings.defaultBackground = defaultBackground;
+    }
+
     return settings;
   }
 
-  public static ArrayList<Overlay> loadOverlays() {
-    ArrayList<Overlay> overlays = new ArrayList<Overlay>();
+  public static ArrayList<NamedImage> loadOverlays() {
+    return loadNamedImages("overlay");
+  }
 
-    File folder = new File("./res/overlays/");
+  public static ArrayList<NamedImage> loadBackgrounds() {
+    return loadNamedImages("background");
+  }
+
+  private static ArrayList<NamedImage> loadNamedImages(String type) {
+    ArrayList<NamedImage> images = new ArrayList<NamedImage>();
+
+    File folder = new File("./res/" + type + "s/");
     File[] files = folder.listFiles();
     if (files == null) {
-      return overlays;
+      return images;
     }
 
     for (File file : files) {
@@ -112,15 +125,15 @@ public class ResourceLoader {
       try {
         image = ImageIO.read(file);
       } catch (IOException exception) {
-        System.out.println("Unable to load overlay " + filename);
-        return overlays;
+        System.out.println("Unable to load " + type + " " + filename);
+        return images;
       }
 
       if (image != null) {
-        overlays.add(new Overlay(filename, image));
+        images.add(new NamedImage(filename, image));
       }
     }
 
-    return overlays;
+    return images;
   }
 }
