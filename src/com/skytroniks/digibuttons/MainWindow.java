@@ -140,7 +140,8 @@ public class MainWindow extends JFrame {
     User32.MSG msg = new User32.MSG();
 
     while (!quit) {
-      User32.INSTANCE.PeekMessage(msg, null, 0, 0, 0);
+      // hex arguments: WM_KEYFIRST, WM_KEYLAST, PM_REMOVE
+      User32.INSTANCE.PeekMessage(msg, null, 0x0100, 0x0109, 0x0001);
       try {
         Thread.sleep(1);
       } catch (InterruptedException e) {
